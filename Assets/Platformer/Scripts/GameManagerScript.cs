@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class GameManagerScript : MonoBehaviour
 {
@@ -17,6 +18,7 @@ public class GameManagerScript : MonoBehaviour
     public Camera mainCamera;
     public float cameraSpeed;
     public GameObject coinPrefab;
+    public GameObject debrisPrefab;
 
     private void Start()
     {
@@ -59,6 +61,7 @@ public class GameManagerScript : MonoBehaviour
                 if (hit.collider.CompareTag("breakableBrick") || hit.collider.gameObject.layer == LayerMask.NameToLayer("breakableBrick"))
                 {
                     Destroy(hit.collider.gameObject);
+                    spawnDebris(hit);
                 }
                 if (hit.collider.CompareTag("coinBlock"))
                 {
@@ -93,5 +96,22 @@ public class GameManagerScript : MonoBehaviour
 
         // Move the camera horizontally
         mainCamera.transform.Translate(new Vector3(movement, 0f, 0f));
+    }
+
+    private void spawnDebris(RaycastHit hit)
+    {
+        float rotationSpeed = 20;
+        float debrisForce = 4;
+        for (int i = 0; i < 4; i++)//Spawn 4 brick chunks
+        {
+            GameObject debris = Instantiate(debrisPrefab, hit.point, Quaternion.identity);
+    
+            // Apply initial direction and random rotation to debris
+            Vector3 direction = Quaternion.Euler(Random.Range(-45f, 45f), Random.Range(-45f, 45f), Random.Range(0f, 360f)) * Vector3.up;
+            debris.GetComponent<Rigidbody>().velocity = direction * debrisForce;
+    
+            // Apply random rotation and spin to debris
+            debris.GetComponent<Rigidbody>().angularVelocity = Random.insideUnitSphere * rotationSpeed;
+        }
     }
 }

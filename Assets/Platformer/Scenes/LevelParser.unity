@@ -433,6 +433,7 @@ MonoBehaviour:
   mainCamera: {fileID: 963194227}
   cameraSpeed: 15
   coinPrefab: {fileID: 1010642213685925962, guid: 8a6d1037474794cd0b6f41038209b73c, type: 3}
+  debrisPrefab: {fileID: 3658972821780468989, guid: afa1773b8859c4d1390fe751fc6eabac, type: 3}
 --- !u!4 &364121306
 Transform:
   m_ObjectHideFlags: 0
