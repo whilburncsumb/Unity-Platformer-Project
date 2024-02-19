@@ -8,12 +8,15 @@ public class GameManagerScript : MonoBehaviour
 {
     public TextMeshProUGUI timerText;
     public TextMeshProUGUI coinText;
+    public TextMeshProUGUI scoreText;
+    public TextMeshProUGUI levelText;
     public Material questionBlock;
     private float patternSwitchTime;
     public float patternSwitchInterval;
     private int coins;
     public Camera mainCamera;
     public float cameraSpeed;
+    public GameObject coinPrefab;
 
     private void Start()
     {
@@ -24,13 +27,19 @@ public class GameManagerScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        int intTime = 400 - (int)Time.realtimeSinceStartup;
-        string timeStr = $"Time: \n {intTime}";
-        timerText.text = timeStr;
-        coinText.text = coins.ToString();
+        updateHUD();
         questionBlockAnimation();
         mouseActions();
         moveCamera();
+    }
+
+    private void updateHUD()
+    {
+        int intTime = 400 - (int)Time.realtimeSinceStartup;
+        string timeStr = $"TIME \n {intTime}";
+        timerText.text = timeStr;
+        string coinStr = $" \n {coins.ToString()}";
+        coinText.text = coinStr;
     }
 
     private void mouseActions()
@@ -54,6 +63,8 @@ public class GameManagerScript : MonoBehaviour
                 if (hit.collider.CompareTag("coinBlock"))
                 {
                     coins++;
+                    Vector3 block = hit.collider.gameObject.transform.position;
+                    Instantiate(coinPrefab, block + Vector3.up+Vector3.back, Quaternion.identity);
                 }
             }
         }
