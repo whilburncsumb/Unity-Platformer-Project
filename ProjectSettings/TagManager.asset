@@ -6,6 +6,7 @@ TagManager:
   tags:
   - breakableBrick
   - coinBlock
+  - noteBlock
   layers:
   - Default
   - TransparentFX

@@ -19,6 +19,12 @@ public class GameManagerScript : MonoBehaviour
     public float cameraSpeed;
     public GameObject coinPrefab;
     public GameObject debrisPrefab;
+    // Variables that control the pitch of music note blocks
+    public float minY;
+    public float maxY;
+    public float minPitch;
+    public float maxPitch;
+    
 
     private void Start()
     {
@@ -63,11 +69,25 @@ public class GameManagerScript : MonoBehaviour
                     Destroy(hit.collider.gameObject);
                     spawnDebris(hit);
                 }
-                if (hit.collider.CompareTag("coinBlock"))
+                else if (hit.collider.CompareTag("coinBlock"))
                 {
                     coins++;
                     Vector3 block = hit.collider.gameObject.transform.position;
                     Instantiate(coinPrefab, block + Vector3.up+Vector3.back, Quaternion.identity);
+                }
+                else if(hit.collider.CompareTag("noteBlock"))
+                {
+                    AudioSource block = hit.collider.gameObject.GetComponent<AudioSource>();
+                    // Get the current y-position of the block
+                    float yPos = hit.collider.gameObject.transform.position.y%8;
+                    
+                    // Calculate the pitch based on the y-position
+                    float normalizedY = Mathf.InverseLerp(minY, maxY, yPos);
+                    // float pitch = Mathf.Lerp(minPitch, maxPitch, normalizedY);
+                    float pitch = Mathf.Lerp(minPitch, maxPitch, normalizedY);
+                    block.pitch = pitch;
+                    block.Play();
+                    Debug.Log("Playing note in pitch: " + pitch);
                 }
             }
         }
