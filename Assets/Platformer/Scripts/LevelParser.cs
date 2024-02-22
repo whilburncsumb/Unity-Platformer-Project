@@ -9,6 +9,7 @@ public class LevelParser : MonoBehaviour
     public GameObject brickPrefab;
     public GameObject questionBoxPrefab;
     public GameObject stonePrefab;
+    public GameObject notePrefab;
     public Transform environmentRoot;
 
     // --------------------------------------------------------------------------
@@ -90,6 +91,12 @@ public class LevelParser : MonoBehaviour
                     {
                         Vector3 newPos = new Vector3(column+.5f,row+.5f,0f); 
                         Instantiate(stonePrefab, newPos,Quaternion.identity,environmentRoot);
+                        break;
+                    }
+                    case 'n':
+                    {
+                        Vector3 newPos = new Vector3(column+.5f,row+.5f,0f); 
+                        Instantiate(notePrefab, newPos,Quaternion.identity,environmentRoot);
                         break;
                     }
                 }
