@@ -67,5 +67,9 @@ public class CharacterControllerLive : MonoBehaviour
         // transform.rotation.eulerAngles = new Vector3(0f,yaw,0f);
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
 
+        float speedy = rbody.velocity.x;
+        Animator anim = GetComponent<Animator>();
+        anim.SetFloat("Speed",Mathf.Abs(speedy));
+        anim.SetBool("In Air",!grounded);
     }
 }
