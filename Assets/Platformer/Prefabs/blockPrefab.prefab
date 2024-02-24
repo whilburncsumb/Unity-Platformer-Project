@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 7635198172264255417}
   - component: {fileID: 5241652136347286799}
   - component: {fileID: 8356095196403806607}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: blockPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}

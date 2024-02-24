@@ -38,7 +38,7 @@ public class GameManagerScript : MonoBehaviour
         updateHUD();
         questionBlockAnimation();
         mouseActions();
-        moveCamera();
+        // moveCamera();
     }
 
     private void updateHUD()

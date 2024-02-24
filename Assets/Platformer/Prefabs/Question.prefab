@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2652198492393551389}
   - component: {fileID: 2652198492393551388}
   - component: {fileID: 2517929246708613404}
-  m_Layer: 6
+  m_Layer: 3
   m_Name: Question
   m_TagString: coinBlock
   m_Icon: {fileID: 0}
