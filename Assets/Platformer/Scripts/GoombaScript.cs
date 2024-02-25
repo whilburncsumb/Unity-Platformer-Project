@@ -11,9 +11,12 @@ public class GoombaScript : MonoBehaviour
     private float yVelocity = 0;
     private Collider col;
     private bool movingRight = false;
+    public bool grounded;
+    // private Rigidbody rbody;
 
     void Start()
     {
+        // rbody = GetComponent<Rigidbody>();
         col = GetComponent<Collider>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         StartCoroutine(FlipSpritePeriodically());
@@ -34,8 +37,8 @@ public class GoombaScript : MonoBehaviour
     void Update()
     {
         // Check for obstacles to the left and right
-        bool obstacleToLeft = CheckObstacle(Vector2.left,.1f);
-        bool obstacleToRight = CheckObstacle(Vector2.right,.1f);
+        bool obstacleToLeft = CheckObstacle(Vector2.left,.1f,false);
+        bool obstacleToRight = CheckObstacle(Vector2.right,.1f,false);
 
         // Reverse direction if an obstacle is detected
         if (obstacleToLeft || obstacleToRight)
@@ -49,7 +52,7 @@ public class GoombaScript : MonoBehaviour
         ApplyGravity();
     }
     
-    bool CheckObstacle(Vector3 direction, float distanceFromEdge)
+    bool CheckObstacle(Vector3 direction, float distanceFromEdge,bool checkfloor)
     {
         // Get the BoxCollider component attached to the GameObject
         BoxCollider boxCollider = GetComponent<BoxCollider>();
@@ -65,6 +68,16 @@ public class GoombaScript : MonoBehaviour
         // Draw the raycast for visualization
         Color rayColor = hitSomething ? Color.red : Color.green;
         Debug.DrawRay(raycastOrigin, direction * raycastDistance, rayColor);
+        
+        // If an obstacle is detected and it's below the object
+        if (hitSomething && checkfloor)
+        {
+            // Snap the object to the top of the detected object
+            // transform.position = hit.point + hit.normal * (boxCollider.size.y / 2f);
+            // var top = hit.collider.bounds.max;
+            // Debug.Log("top: " + top);
+            // transform.SetPositionAndRotation(new Vector3(transform.position.x,top.y,0f),Quaternion.identity);
+        }
 
         // Return true if an obstacle is detected
         return hitSomething;
@@ -79,19 +92,22 @@ public class GoombaScript : MonoBehaviour
         // Vector3 groundCheckBoxPosition = transform.position - Vector3.up*2f;
         // bool grounded = Physics.OverlapBox(groundCheckBoxPosition, groundCheckSize / 2f, Quaternion.identity, groundLayer).Length > 0;
         // DebugDrawGroundCheckBox(groundCheckBoxPosition, groundCheckSize, grounded);
-        bool grounded = CheckObstacle(Vector2.down,.1f);
+        grounded = CheckObstacle(Vector2.down,.1f,true);
         if (!grounded)
         {
             yVelocity += Physics.gravity.y * Time.deltaTime;
             yVelocity = Mathf.Clamp(yVelocity, -15, 15);
-
+            
+            
             // Calculate the displacement based on the current velocity
             float displacement = yVelocity * Time.deltaTime;
             transform.Translate(Vector3.up * displacement);
+            
         }
         else
         {
             yVelocity = 0;
         }
+        // rbody.useGravity = !grounded;
     }
 }

@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CharacterControllerLive : MonoBehaviour
 {
@@ -20,11 +22,18 @@ public class CharacterControllerLive : MonoBehaviour
     public new Camera camera;
     private Animator anim;
     private Collider col;
+    public GameManagerScript manager;
     public LayerMask groundLayer; // Layer mask for the ground objects
     private Vector3 groundCheckSize; // Size of the ground check box
     public float coyoteTimeThreshhold;
     public float bufferTimeThreshhold;
     public float maxFallSpeed;
+    private AudioSource sound;
+    public Image youDied;
+    public Image youWon;
+    public AudioClip explosion;
+    public AudioClip yay;
+    private bool canMove = true;
     
     // Start is called before the first frame update
     void Start()
@@ -38,6 +47,7 @@ public class CharacterControllerLive : MonoBehaviour
         groundCheckSize = new Vector3(0.7f, .05f, 0.7f);
         jumpBuffered = false;
         coyote = false;
+        sound = GetComponent<AudioSource>();
     }
 
     // Update is called once per frame
@@ -165,6 +175,28 @@ public class CharacterControllerLive : MonoBehaviour
             (new Vector3(transform.position.x,camPosition.y,camPosition.z),Quaternion.identity);
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("enemyTag"))
+        {
+            Debug.Log("YOU LOSE!");
+            manager.StartFadeIn(youDied);
+            sound.clip = explosion;
+            sound.Play();
+            
+        }
+
+        if (other.gameObject.CompareTag("flagpoleTag"))
+        {
+            Debug.Log("YOU WIN!");
+            manager.StartFadeIn(youWon);
+            sound.clip = yay;
+            sound.Play();
+        }
+    }
+    
+    
+
     private void determineIfGrounded()
     {
         //Capsule Collider
@@ -199,7 +231,6 @@ public class CharacterControllerLive : MonoBehaviour
         DebugDrawGroundCheckBox(groundCheckBoxPosition, groundCheckSize, grounded);
         if (grounded)
         {
-            transform.position += Vector3.up * groundCheckSize.y/50f;
             coyote = true;
         }
 
@@ -208,6 +239,7 @@ public class CharacterControllerLive : MonoBehaviour
             StartCoroutine(disableCoyote());
         } else if (!oldGrounded && grounded) //hitting ground
         {
+            transform.position += Vector3.up * groundCheckSize.y/50f;
             jumping = false;
             if (jumpBuffered)
             {
@@ -216,6 +248,7 @@ public class CharacterControllerLive : MonoBehaviour
                 // Debug.Log("BUFFERED JUMP GO!");
             }
         }
+        rbody.useGravity = !grounded;
     }
 
     void DebugDrawGroundCheckBox(Vector3 center, Vector3 size, bool grounded)
@@ -232,9 +265,7 @@ public class CharacterControllerLive : MonoBehaviour
 
     IEnumerator disableCoyote()
     {
-        // Debug.Log("Getting ready to change coyote value...");
         yield return new WaitForSeconds(coyoteTimeThreshhold);
-        // Debug.Log("Coyote is off now");
         coyote = false;
     }
     

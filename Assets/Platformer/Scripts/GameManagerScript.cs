@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using Random = UnityEngine.Random;
+using UnityEngine.SceneManagement;
 
 public class GameManagerScript : MonoBehaviour
 {
@@ -25,11 +27,18 @@ public class GameManagerScript : MonoBehaviour
     public float minPitch;
     public float maxPitch;
     
+    public float fadeDuration = 1f; // Duration of the fade-in animation
+    public Image youDied;
+    public Image youWon;
+
+    private float elapsedTime = 0f;
+    private Color targetColor = Color.clear;
 
     private void Start()
     {
         patternSwitchTime = patternSwitchInterval;
         coins = 0;
+        // StartFadeIn(youDied);
     }
 
     // Update is called once per frame
@@ -39,11 +48,16 @@ public class GameManagerScript : MonoBehaviour
         questionBlockAnimation();
         mouseActions();
         // moveCamera();
+        
     }
 
     private void updateHUD()
     {
         int intTime = 400 - (int)Time.realtimeSinceStartup;
+        if (intTime <= 0)
+        {
+            StartFadeIn(youDied);
+        }
         string timeStr = $"TIME \n {intTime}";
         timerText.text = timeStr;
         string coinStr = $" \n {coins.ToString()}";
@@ -133,5 +147,45 @@ public class GameManagerScript : MonoBehaviour
             // Apply random rotation and spin to debris
             debris.GetComponent<Rigidbody>().angularVelocity = Random.insideUnitSphere * rotationSpeed;
         }
+    }
+    
+    public void StartFadeIn(Image i)
+    {
+        // Enable the Image component
+        i.enabled = true;
+
+        // Start fade-in animation
+        targetColor = youDied.color; // Make sure targetColor has the same color as the current color
+        targetColor.a = 1f; // Set the alpha value to fully opaque
+
+        // Start the fade-in coroutine
+        StartCoroutine(FadeInCoroutine(i));
+    }
+
+    void RestartGame()
+    {
+        // Restart the game here
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+    
+    IEnumerator FadeInCoroutine(Image i)
+    {
+        while (elapsedTime < fadeDuration)
+        {
+            // Calculate the current alpha value based on the elapsed time
+            float alpha = Mathf.Lerp(0f, 1f, elapsedTime / fadeDuration);
+
+            // Update the color with the new alpha value
+            i.color = new Color(targetColor.r, targetColor.g, targetColor.b, alpha);
+            // Wait for the next frame
+            yield return null;
+            elapsedTime += Time.deltaTime;
+        }
+
+        // Ensure the final color is set correctly
+        i.color = targetColor;
+        yield return new WaitForSeconds(3f);
+        // Restart the game here
+        RestartGame();
     }
 }
