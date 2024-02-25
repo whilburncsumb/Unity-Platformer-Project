@@ -6,22 +6,25 @@ using UnityEngine;
 public class CharacterControllerLive : MonoBehaviour
 {
     public float speed = 50f;
+    public float maxWalkSpeed;
     public float maxSpeed = 15f;
     public float jumpForce = 10f;
     public float jumpBoost = .3f;
-    public bool grounded;
-    public bool jumping;
-    public bool coyote;
-    public bool jumpBuffered;
+    public float jumpHaltFactor;
+    public float horizontalSlowdownFactor;
+    private bool grounded;
+    private bool jumping;
+    private bool coyote;
+    private bool jumpBuffered;
     private Rigidbody rbody;
-    public Camera camera;
+    public new Camera camera;
     private Animator anim;
     private Collider col;
     public LayerMask groundLayer; // Layer mask for the ground objects
     private Vector3 groundCheckSize; // Size of the ground check box
-    private float coyoteTimer;
     public float coyoteTimeThreshhold;
     public float bufferTimeThreshhold;
+    public float maxFallSpeed;
     
     // Start is called before the first frame update
     void Start()
@@ -34,6 +37,7 @@ public class CharacterControllerLive : MonoBehaviour
         //If using box collider
         groundCheckSize = new Vector3(0.7f, .05f, 0.7f);
         jumpBuffered = false;
+        coyote = false;
     }
 
     // Update is called once per frame
@@ -42,21 +46,20 @@ public class CharacterControllerLive : MonoBehaviour
         var horizontalMovement = HorizontalMovement();
         GroundCheck();
         Jump();
-        BodyRotation(horizontalMovement);
         animate();
         moveCamera();
     }
 
+    private void FixedUpdate()
+    {
+        var horizontalMovement = HorizontalMovement();
+        BodyRotation(horizontalMovement);
+        slowDown();
+    }
+
     private void BodyRotation(float horizontalMovement)
     {
-        //Slow down Mario
-        if (Math.Abs(horizontalMovement)<0.5f)
-        {
-            // rbody.velocity *= Math.Abs(horizontalMovement);
-            Vector3 newV = rbody.velocity;
-            newV.x *= 1f - Time.deltaTime;
-            rbody.velocity = newV;
-        }
+        if(rbody.velocity.x==0){return;}
         //Set model rotation
         float yaw = (rbody.velocity.x>0) ? 90:-90;
         // transform.rotation.eulerAngles = new Vector3(0f,yaw,0f);
@@ -67,26 +70,36 @@ public class CharacterControllerLive : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space) && (grounded || coyote))
         {
-            //reset y momentum for coyote jump
-            Vector3 newV = rbody.velocity;
-            newV.y = 0f;
-            rbody.velocity = newV;
-            rbody.AddForce(Vector3.up * jumpForce,ForceMode.Impulse);
             jumping = true;
+            ApplyJumpForce();
         }
         else if (Input.GetKeyDown(KeyCode.Space) && jumping)
         {
             jumpBuffered = true;
             StartCoroutine(disableJumpBuffer());
         }
-        else if (!grounded && Input.GetKey(KeyCode.Space))
+        // else if (!grounded && Input.GetKey(KeyCode.Space))
+        // {
+        //     if (rbody.velocity.y > 0)
+        //     {
+        //         rbody.AddForce(Vector3.up*jumpBoost,ForceMode.Force);
+        //     }
+        // }
+        //Clamp fall speed
+        if (!grounded && rbody.velocity.y < maxFallSpeed)
         {
-            if (rbody.velocity.y > 0)
-            {
-                rbody.AddForce(Vector3.up*jumpBoost,ForceMode.Force);
-            }
-            
+            rbody.velocity = new Vector3(rbody.velocity.x, maxFallSpeed, 0f);
+            // Debug.Log("CLAMPING V SPEED");
         }
+    }
+
+    private void ApplyJumpForce()
+    {
+        //Reset y velocity
+        Vector3 newV = rbody.velocity;
+        newV.y = 0f;
+        rbody.velocity = newV;
+        rbody.AddForce(Vector3.up * jumpForce,ForceMode.Impulse);
     }
 
     private void animate()
@@ -99,21 +112,49 @@ public class CharacterControllerLive : MonoBehaviour
     private float HorizontalMovement()
     {
         float horizontalMovement = Input.GetAxis("Horizontal");
-        
         rbody.velocity += Vector3.right * (horizontalMovement * Time.deltaTime * speed);
-        if (Math.Abs(rbody.velocity.x) > maxSpeed)
+        Vector3 newV = rbody.velocity;
+        if (Input.GetKey(KeyCode.LeftShift))//running
         {
-            Vector3 newV = rbody.velocity;
             newV.x = Mathf.Clamp(newV.x,-maxSpeed, maxSpeed);
-            rbody.velocity = newV;
+        }
+        else //walking
+        {
+            newV.x = Mathf.Clamp(newV.x,-maxWalkSpeed, maxWalkSpeed);
         }
 
-        if (horizontalMovement < 0.1f)
-        {
-            //slow down?
-        }
+        // Apply the new velocity
+        rbody.velocity = newV;
 
         return horizontalMovement;
+    }
+
+    void slowDown()
+    {
+        Vector3 newV = rbody.velocity;
+        //Slow horizontaly
+        float horizontalMovement = Input.GetAxis("Horizontal");
+        // Slow down gradually when not holding a direction
+        if (newV.x != 0f && Mathf.Abs(horizontalMovement) < 0.5f)
+        {
+            newV.x *= horizontalSlowdownFactor;
+            if (newV.x < 0.01f && newV.x > -0.01f)
+            {
+                newV.x = 0;
+            }
+            // Debug.Log("Slowing down! X velocity: " + newV.x);
+        }
+        
+        //Slow vertically
+        if (jumping && !Input.GetKey(KeyCode.Space) && rbody.velocity.y > 0f && rbody.velocity.y < (jumpForce*.75f))
+        {
+            //If they let go of space during the upward portion of a jump
+            // Debug.Log("slowing down jump...");
+            newV.y *= jumpHaltFactor;
+            rbody.velocity = newV;
+        }
+        
+        rbody.velocity = newV;
     }
 
 
@@ -170,8 +211,9 @@ public class CharacterControllerLive : MonoBehaviour
             jumping = false;
             if (jumpBuffered)
             {
-                Jump();
-                Debug.Log("BUFFERED JUMP GO!");
+                ApplyJumpForce();
+                jumpBuffered = false;
+                // Debug.Log("BUFFERED JUMP GO!");
             }
         }
     }

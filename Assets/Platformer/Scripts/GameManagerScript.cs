@@ -15,8 +15,8 @@ public class GameManagerScript : MonoBehaviour
     private float patternSwitchTime;
     public float patternSwitchInterval;
     private int coins;
-    public Camera mainCamera;
-    public float cameraSpeed;
+    // public Camera mainCamera;
+    // public float cameraSpeed;
     public GameObject coinPrefab;
     public GameObject debrisPrefab;
     // Variables that control the pitch of music note blocks
@@ -109,14 +109,14 @@ public class GameManagerScript : MonoBehaviour
         }
     }
 
-    private void moveCamera()
-    {
-        float input = Input.GetAxis("Horizontal");
-        float movement = input * cameraSpeed * Time.deltaTime;
-
-        // Move the camera horizontally
-        mainCamera.transform.Translate(new Vector3(movement, 0f, 0f));
-    }
+    // private void moveCamera()
+    // {
+    //     float input = Input.GetAxis("Horizontal");
+    //     float movement = input * cameraSpeed * Time.deltaTime;
+    //
+    //     // Move the camera horizontally
+    //     mainCamera.transform.Translate(new Vector3(movement, 0f, 0f));
+    // }
 
     private void spawnDebris(RaycastHit hit)
     {
