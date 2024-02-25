@@ -10,14 +10,18 @@ public class CharacterControllerLive : MonoBehaviour
     public float jumpForce = 10f;
     public float jumpBoost = .3f;
     public bool grounded;
+    public bool jumping;
+    public bool coyote;
+    public bool jumpBuffered;
     private Rigidbody rbody;
     public Camera camera;
-    private float halfH;
     private Animator anim;
     private Collider col;
     public LayerMask groundLayer; // Layer mask for the ground objects
     private Vector3 groundCheckSize; // Size of the ground check box
-
+    private float coyoteTimer;
+    public float coyoteTimeThreshhold;
+    public float bufferTimeThreshhold;
     
     // Start is called before the first frame update
     void Start()
@@ -28,8 +32,8 @@ public class CharacterControllerLive : MonoBehaviour
         //If using Capsule collider
         // halfH = col.bounds.extents.y + 0.03f;
         //If using box collider
-        halfH = 0.03f;
         groundCheckSize = new Vector3(0.7f, .05f, 0.7f);
+        jumpBuffered = false;
     }
 
     // Update is called once per frame
@@ -37,19 +41,15 @@ public class CharacterControllerLive : MonoBehaviour
     {
         var horizontalMovement = HorizontalMovement();
         GroundCheck();
+        Jump();
+        BodyRotation(horizontalMovement);
+        animate();
+        moveCamera();
+    }
 
-        if (Input.GetKeyDown(KeyCode.Space) && grounded)
-        {
-            rbody.AddForce(Vector3.up * jumpForce,ForceMode.Impulse);
-        } else if (!grounded && Input.GetKey(KeyCode.Space))
-        {
-            if (rbody.velocity.y > 0)
-            {
-                rbody.AddForce(Vector3.up*jumpBoost,ForceMode.Force);
-            }
-            
-        }
-
+    private void BodyRotation(float horizontalMovement)
+    {
+        //Slow down Mario
         if (Math.Abs(horizontalMovement)<0.5f)
         {
             // rbody.velocity *= Math.Abs(horizontalMovement);
@@ -57,12 +57,36 @@ public class CharacterControllerLive : MonoBehaviour
             newV.x *= 1f - Time.deltaTime;
             rbody.velocity = newV;
         }
+        //Set model rotation
         float yaw = (rbody.velocity.x>0) ? 90:-90;
         // transform.rotation.eulerAngles = new Vector3(0f,yaw,0f);
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+    }
 
-        animate();
-        moveCamera();
+    private void Jump()
+    {
+        if (Input.GetKeyDown(KeyCode.Space) && (grounded || coyote))
+        {
+            //reset y momentum for coyote jump
+            Vector3 newV = rbody.velocity;
+            newV.y = 0f;
+            rbody.velocity = newV;
+            rbody.AddForce(Vector3.up * jumpForce,ForceMode.Impulse);
+            jumping = true;
+        }
+        else if (Input.GetKeyDown(KeyCode.Space) && jumping)
+        {
+            jumpBuffered = true;
+            StartCoroutine(disableJumpBuffer());
+        }
+        else if (!grounded && Input.GetKey(KeyCode.Space))
+        {
+            if (rbody.velocity.y > 0)
+            {
+                rbody.AddForce(Vector3.up*jumpBoost,ForceMode.Force);
+            }
+            
+        }
     }
 
     private void animate()
@@ -71,29 +95,33 @@ public class CharacterControllerLive : MonoBehaviour
         anim.SetFloat("Speed",Mathf.Abs(ySpeed));
         anim.SetBool("In Air",!grounded);
     }
-
+    
     private float HorizontalMovement()
     {
         float horizontalMovement = Input.GetAxis("Horizontal");
-        // rbody.velocity *= Math.Abs(horizontalMovement);
-        
         
         rbody.velocity += Vector3.right * (horizontalMovement * Time.deltaTime * speed);
         if (Math.Abs(rbody.velocity.x) > maxSpeed)
         {
-            // rbody.velocity = rbody.velocity.normalized * maxSpeed;
             Vector3 newV = rbody.velocity;
             newV.x = Mathf.Clamp(newV.x,-maxSpeed, maxSpeed);
             rbody.velocity = newV;
         }
 
+        if (horizontalMovement < 0.1f)
+        {
+            //slow down?
+        }
+
         return horizontalMovement;
     }
 
+
     private void moveCamera()
     {
-        var camposition = camera.transform.position;
-        camera.transform.SetPositionAndRotation(new Vector3(transform.position.x,camposition.y,camposition.z),Quaternion.identity);
+        var camPosition = camera.transform.position;
+        camera.transform.SetPositionAndRotation
+            (new Vector3(transform.position.x,camPosition.y,camPosition.z),Quaternion.identity);
     }
 
     private void determineIfGrounded()
@@ -122,14 +150,30 @@ public class CharacterControllerLive : MonoBehaviour
     
     void GroundCheck()
     {
+        bool oldGrounded = grounded;
         // Calculate the position of the ground check box
         Vector3 groundCheckBoxPosition = transform.position - Vector3.up * (groundCheckSize.y / 2f);
-
         // Perform overlap box check to see if the ground check box overlaps with any ground objects
         grounded = Physics.OverlapBox(groundCheckBoxPosition, groundCheckSize / 2f, Quaternion.identity, groundLayer).Length > 0;
-
-        // Optionally, you can visualize the ground check box using Debug.DrawCube
         DebugDrawGroundCheckBox(groundCheckBoxPosition, groundCheckSize, grounded);
+        if (grounded)
+        {
+            transform.position += Vector3.up * groundCheckSize.y/50f;
+            coyote = true;
+        }
+
+        if (oldGrounded && !grounded) //leaving ground
+        {
+            StartCoroutine(disableCoyote());
+        } else if (!oldGrounded && grounded) //hitting ground
+        {
+            jumping = false;
+            if (jumpBuffered)
+            {
+                Jump();
+                Debug.Log("BUFFERED JUMP GO!");
+            }
+        }
     }
 
     void DebugDrawGroundCheckBox(Vector3 center, Vector3 size, bool grounded)
@@ -142,5 +186,19 @@ public class CharacterControllerLive : MonoBehaviour
         Debug.DrawRay(center + new Vector3(-size.x / 2f,  -size.y / 2f,0f), Vector3.up * size.y, color);
         Debug.DrawRay(center + new Vector3(-size.x / 2f,  size.y / 2f,0f), Vector3.right * size.x, color);
         Debug.DrawRay(center + new Vector3(size.x / 2f,  -size.y / 2f,0f), Vector3.up * size.y, color);
+    }
+
+    IEnumerator disableCoyote()
+    {
+        // Debug.Log("Getting ready to change coyote value...");
+        yield return new WaitForSeconds(coyoteTimeThreshhold);
+        // Debug.Log("Coyote is off now");
+        coyote = false;
+    }
+    
+    IEnumerator disableJumpBuffer()
+    {
+        yield return new WaitForSeconds(bufferTimeThreshhold);
+        jumpBuffered = false;
     }
 }
