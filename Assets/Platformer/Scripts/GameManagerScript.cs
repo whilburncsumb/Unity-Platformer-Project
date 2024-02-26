@@ -188,4 +188,10 @@ public class GameManagerScript : MonoBehaviour
         // Restart the game here
         RestartGame();
     }
+
+    public void Explode()
+    {
+        AudioSource source = GetComponent<AudioSource>();
+        source.Play();
+    }
 }

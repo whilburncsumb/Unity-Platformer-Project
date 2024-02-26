@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 public class CharacterControllerLive : MonoBehaviour
 {
@@ -33,6 +34,7 @@ public class CharacterControllerLive : MonoBehaviour
     public Image youWon;
     public AudioClip explosion;
     public AudioClip yay;
+    public GameObject fireExplosion;
     private bool canMove = true;
     
     // Start is called before the first frame update
@@ -78,6 +80,10 @@ public class CharacterControllerLive : MonoBehaviour
 
     private void Jump()
     {
+        if (!canMove)
+        {
+            return;
+        }
         if (Input.GetKeyDown(KeyCode.Space) && (grounded || coyote))
         {
             jumping = true;
@@ -121,6 +127,10 @@ public class CharacterControllerLive : MonoBehaviour
     
     private float HorizontalMovement()
     {
+        if (!canMove)
+        {
+            return 0f;
+        }
         float horizontalMovement = Input.GetAxis("Horizontal");
         rbody.velocity += Vector3.right * (horizontalMovement * Time.deltaTime * speed);
         Vector3 newV = rbody.velocity;
@@ -183,6 +193,12 @@ public class CharacterControllerLive : MonoBehaviour
             manager.StartFadeIn(youDied);
             sound.clip = explosion;
             sound.Play();
+            Instantiate(fireExplosion, transform.position,Quaternion.identity);
+            canMove = false;
+            manager.Explode();
+            Object.Destroy(this.gameObject);
+            rbody.velocity = new Vector3(0f, 0f, 0f);
+            rbody.useGravity = false;
             
         }
 
