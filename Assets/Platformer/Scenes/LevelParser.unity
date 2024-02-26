@@ -675,7 +675,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e6568559d6661b4eba05e67f1401a83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  filename: Test
+  filename: CustomLevel
   rockPrefab: {fileID: 6591380503629234423, guid: 50536d351169845c8bde6784d1aa8f4f, type: 3}
   brickPrefab: {fileID: 2652198492393551387, guid: d94221691cf23ce429136e2be05d002b, type: 3}
   questionBoxPrefab: {fileID: 2652198492393551387, guid: 97d0fe6850ab3714eaa654f26f4ca9f8, type: 3}
@@ -949,7 +949,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!212 &859565990
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1037,15 +1037,19 @@ MonoBehaviour:
   speed: 50
   maxWalkSpeed: 10
   maxSpeed: 15
-  jumpForce: 20
+  jumpForce: 18
   jumpBoost: 1.2
   jumpHaltFactor: 0.5
+  apexWindow: 0.3
   horizontalSlowdownFactor: 0.85
   camera: {fileID: 963194227}
   manager: {fileID: 364121305}
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 64
   coyoteTimeThreshhold: 0.1
   bufferTimeThreshhold: 0.1
   maxFallSpeed: -15

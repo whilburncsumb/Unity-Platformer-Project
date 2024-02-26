@@ -15,11 +15,13 @@ public class CharacterControllerLive : MonoBehaviour
     public float jumpForce = 10f;
     public float jumpBoost = .3f;
     public float jumpHaltFactor;
+    public float apexWindow;
     public float horizontalSlowdownFactor;
     private bool grounded;
     private bool jumping;
     private bool coyote;
     private bool jumpBuffered;
+    private bool doubleJumpUsed;
     private Rigidbody rbody;
     public new Camera camera;
     private Animator anim;
@@ -39,6 +41,9 @@ public class CharacterControllerLive : MonoBehaviour
     public GameObject coinPrefab;
     public GameObject debrisPrefab;
     private bool canMove = true;
+    private Vector3 gravConstant;
+    private Vector3 lastGroundPosition;
+    
     
     // Start is called before the first frame update
     void Start()
@@ -53,6 +58,9 @@ public class CharacterControllerLive : MonoBehaviour
         jumpBuffered = false;
         coyote = false;
         sound = GetComponent<AudioSource>();
+        gravConstant = Physics.gravity;
+        lastGroundPosition = transform.position;
+        doubleJumpUsed = false;
     }
     
     void Update()
@@ -87,16 +95,40 @@ public class CharacterControllerLive : MonoBehaviour
         {
             return;
         }
+        
+        //Jump apex modifiers
+        if (jumping && Input.GetKey(KeyCode.Space) && rbody.velocity.y < apexWindow &&
+            rbody.velocity.y > -apexWindow && transform.position.y > lastGroundPosition.y + 2) 
+        {
+            Debug.DrawRay(transform.position,Vector3.down*3,Color.black);
+            Debug.Log("APEX MODIFIERS APPLIED!");
+            HorizontalMovement();
+            Physics.gravity = gravConstant / 5;
+        }
+        else
+        {
+            Physics.gravity = gravConstant;
+        }
+            
+            
         if (Input.GetKeyDown(KeyCode.Space) && (grounded || coyote))
         {
             jumping = true;
             ApplyJumpForce();
+            lastGroundPosition = transform.position;
+        }
+        else if (Input.GetKeyDown(KeyCode.Space) && jumping && !doubleJumpUsed)//double jump
+        {
+            doubleJumpUsed = true;
+            ApplyJumpForce();
+            anim.Play("Flip");
         }
         else if (Input.GetKeyDown(KeyCode.Space) && jumping)
         {
             jumpBuffered = true;
             StartCoroutine(disableJumpBuffer());
         }
+        
         //Clamp fall speed
         if (!grounded && rbody.velocity.y < maxFallSpeed)
         {
@@ -119,6 +151,7 @@ public class CharacterControllerLive : MonoBehaviour
         float ySpeed = rbody.velocity.x;
         anim.SetFloat("Speed",Mathf.Abs(ySpeed));
         anim.SetBool("In Air",!grounded);
+        anim.SetBool("Double Jump",doubleJumpUsed);
     }
     
     private float HorizontalMovement()
@@ -288,6 +321,7 @@ public class CharacterControllerLive : MonoBehaviour
         if (grounded)
         {
             coyote = true;
+            doubleJumpUsed = false;
         }
 
         if (oldGrounded && !grounded) //leaving ground
