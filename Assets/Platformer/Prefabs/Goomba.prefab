@@ -13,6 +13,10 @@ PrefabInstance:
       value: Goomba
       objectReference: {fileID: 0}
     - target: {fileID: 1010642213685925962, guid: 8a6d1037474794cd0b6f41038209b73c, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 1010642213685925962, guid: 8a6d1037474794cd0b6f41038209b73c, type: 3}
       propertyPath: m_TagString
       value: enemyTag
       objectReference: {fileID: 0}

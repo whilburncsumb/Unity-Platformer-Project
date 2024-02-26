@@ -508,6 +508,7 @@ MonoBehaviour:
   levelText: {fileID: 1534817522}
   questionBlock: {fileID: 2100000, guid: 844cdc43fc99445da9d654feced29974, type: 2}
   patternSwitchInterval: 0.125
+  mario: {fileID: 869891171}
   coinPrefab: {fileID: 1010642213685925962, guid: 8a6d1037474794cd0b6f41038209b73c, type: 3}
   debrisPrefab: {fileID: 3658972821780468989, guid: afa1773b8859c4d1390fe751fc6eabac, type: 3}
   minY: 0.5
@@ -517,6 +518,7 @@ MonoBehaviour:
   fadeDuration: 1
   youDied: {fileID: 1375958747}
   youWon: {fileID: 310537048}
+  maxClockTime: 100
 --- !u!4 &364121306
 Transform:
   m_ObjectHideFlags: 0
@@ -1049,9 +1051,10 @@ MonoBehaviour:
   maxFallSpeed: -15
   youDied: {fileID: 1375958747}
   youWon: {fileID: 310537048}
-  explosion: {fileID: 8300000, guid: 53eaaa94f1afb154b9789ca8f3f53dda, type: 3}
   yay: {fileID: 8300000, guid: 55da993a06d08de428a75fb4f9ad6edb, type: 3}
-  fireExplosion: {fileID: 4121898474389565369, guid: dc025ace7f162e24f94a48fbf01dd990, type: 3}
+  fireExplosion: {fileID: 2987311528786604721, guid: 1c7716fef0ebc8343b8cda1a57d24b59, type: 3}
+  coinPrefab: {fileID: 1010642213685925962, guid: 8a6d1037474794cd0b6f41038209b73c, type: 3}
+  debrisPrefab: {fileID: 3658972821780468989, guid: afa1773b8859c4d1390fe751fc6eabac, type: 3}
 --- !u!54 &869891172
 Rigidbody:
   m_ObjectHideFlags: 0

@@ -5,6 +5,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 public class CharacterControllerLive : MonoBehaviour
 {
@@ -25,16 +26,18 @@ public class CharacterControllerLive : MonoBehaviour
     private Collider col;
     public GameManagerScript manager;
     public LayerMask groundLayer; // Layer mask for the ground objects
-    private Vector3 groundCheckSize; // Size of the ground check box
+    public LayerMask enemyLayer;
+    private Vector3 groundCheckSize;
     public float coyoteTimeThreshhold;
     public float bufferTimeThreshhold;
     public float maxFallSpeed;
     private AudioSource sound;
     public Image youDied;
     public Image youWon;
-    public AudioClip explosion;
     public AudioClip yay;
     public GameObject fireExplosion;
+    public GameObject coinPrefab;
+    public GameObject debrisPrefab;
     private bool canMove = true;
     
     // Start is called before the first frame update
@@ -51,8 +54,7 @@ public class CharacterControllerLive : MonoBehaviour
         coyote = false;
         sound = GetComponent<AudioSource>();
     }
-
-    // Update is called once per frame
+    
     void Update()
     {
         var horizontalMovement = HorizontalMovement();
@@ -68,6 +70,7 @@ public class CharacterControllerLive : MonoBehaviour
         BodyRotation(horizontalMovement);
         slowDown();
     }
+
 
     private void BodyRotation(float horizontalMovement)
     {
@@ -94,13 +97,6 @@ public class CharacterControllerLive : MonoBehaviour
             jumpBuffered = true;
             StartCoroutine(disableJumpBuffer());
         }
-        // else if (!grounded && Input.GetKey(KeyCode.Space))
-        // {
-        //     if (rbody.velocity.y > 0)
-        //     {
-        //         rbody.AddForce(Vector3.up*jumpBoost,ForceMode.Force);
-        //     }
-        // }
         //Clamp fall speed
         if (!grounded && rbody.velocity.y < maxFallSpeed)
         {
@@ -177,7 +173,6 @@ public class CharacterControllerLive : MonoBehaviour
         rbody.velocity = newV;
     }
 
-
     private void moveCamera()
     {
         var camPosition = camera.transform.position;
@@ -189,52 +184,95 @@ public class CharacterControllerLive : MonoBehaviour
     {
         if (other.gameObject.CompareTag("enemyTag"))
         {
-            Debug.Log("YOU LOSE!");
-            manager.StartFadeIn(youDied);
-            sound.clip = explosion;
-            sound.Play();
-            Instantiate(fireExplosion, transform.position,Quaternion.identity);
-            canMove = false;
-            manager.Explode();
-            Object.Destroy(this.gameObject);
-            rbody.velocity = new Vector3(0f, 0f, 0f);
-            rbody.useGravity = false;
-            
+            if (grounded || !goombaStomp())
+            {
+                Die();
+            }
         }
 
         if (other.gameObject.CompareTag("flagpoleTag"))
         {
-            Debug.Log("YOU WIN!");
-            manager.StartFadeIn(youWon);
-            sound.clip = yay;
-            sound.Play();
+            manager.incrementScore(10000);
+            Win();
         }
     }
-    
-    
 
-    private void determineIfGrounded()
+    private void OnCollisionEnter(Collision other)
     {
-        //Capsule Collider
-        // Vector3 startpoint = transform.position;
-        // Vector3 endpoint = startpoint + Vector3.down * halfH;
-        // grounded = (Physics.Raycast(startpoint, Vector3.down, halfH));
-        // Color lineColor = (grounded) ? Color.red : Color.blue;
-        // Debug.DrawLine(startpoint,endpoint,lineColor,0f,false);
-        
-        //Box collider
-        // Get the center of the character's bounds
-        Vector3 center = col.bounds.center;
-        // Get the extents of the character's bounds
-        Vector3 extents = col.bounds.extents;
-        // Calculate the bottom point of the character's bounds
-        Vector3 bottomPoint = center - new Vector3(0, extents.y, 0);
-        // Shoot a raycast downwards from the bottom of the box collider
-        RaycastHit hit;
-        float raycastDistance = 2f; // Distance of the raycast
-        grounded = Physics.Raycast(bottomPoint, -transform.up, out hit, raycastDistance);
-        // Debug draw the raycast
-        Debug.DrawRay(bottomPoint, -transform.up * raycastDistance, grounded ? Color.green : Color.red);
+        if (other.gameObject.CompareTag("breakableBrick") && hitBlocks() && !grounded)
+        {
+            SpawnDebris(other);
+            manager.incrementScore(100);
+        } else if (other.gameObject.CompareTag("coinBlock") && hitBlocks() && !grounded)
+        {
+            manager.addCoin();
+            manager.incrementScore(100);
+            Instantiate(coinPrefab, other.transform.position+Vector3.up, Quaternion.identity);
+        }
+    }
+
+    private void SpawnDebris(Collision other)
+    {
+        Destroy(other.gameObject);
+        float rotationSpeed = 20;
+        float debrisForce = 4;
+        for (int i = 0; i < 4; i++)//Spawn 4 brick chunks
+        {
+            GameObject debris = Instantiate(debrisPrefab, other.transform.position, Quaternion.identity);
+                
+            // Apply initial direction and random rotation to debris
+            Vector3 direction = Quaternion.Euler(Random.Range(-45f, 45f), Random.Range(-45f, 45f), Random.Range(0f, 360f)) * Vector3.up;
+            debris.GetComponent<Rigidbody>().velocity = direction * debrisForce;
+                
+            // Apply random rotation and spin to debris
+            debris.GetComponent<Rigidbody>().angularVelocity = Random.insideUnitSphere * rotationSpeed;
+        }
+    }
+
+    private bool goombaStomp()
+    {
+        Debug.Log("Checking for a stomp...");
+        Vector3 groundCheckBoxPosition = transform.position - Vector3.up * (groundCheckSize.y / 2f);
+        bool hit = false;
+        Collider[] colliders = Physics.OverlapBox(groundCheckBoxPosition, groundCheckSize / 2f, Quaternion.identity, enemyLayer);
+        foreach (Collider collider in colliders)
+        {
+            Debug.Log("Killing!");
+            Instantiate(fireExplosion, collider.transform.position,Quaternion.identity);
+            manager.incrementScore(300);
+            manager.Explode();
+            Destroy(collider.gameObject);
+            hit = true;
+        }
+    
+        // Return false if no enemies were stomped
+        return hit;
+    }
+
+    private bool hitBlocks()
+    {
+        Vector3 ceilingCheckBoxPosition = transform.position + Vector3.up * ((groundCheckSize.y / 2f) + col.bounds.size.y);
+        // Perform overlap box check to see if the ceiling check box overlaps with any objects above
+        DebugDrawGroundCheckBox(ceilingCheckBoxPosition, groundCheckSize, Color.yellow);
+        return Physics.OverlapBox(ceilingCheckBoxPosition, groundCheckSize / 2f, Quaternion.identity, groundLayer).Length > 0;
+    }
+
+    public void Win()
+    {
+        Debug.Log("YOU WIN!");
+        manager.StartFadeIn(youWon);
+        sound.clip = yay;
+        sound.Play();
+    }
+
+    public void Die()
+    {
+        Debug.Log("YOU LOSE!");
+        manager.StartFadeIn(youDied);
+        Instantiate(fireExplosion, transform.position,Quaternion.identity);
+        canMove = false;
+        manager.Explode();
+        Object.Destroy(this.gameObject);
     }
     
     void GroundCheck()
@@ -244,7 +282,9 @@ public class CharacterControllerLive : MonoBehaviour
         Vector3 groundCheckBoxPosition = transform.position - Vector3.up * (groundCheckSize.y / 2f);
         // Perform overlap box check to see if the ground check box overlaps with any ground objects
         grounded = Physics.OverlapBox(groundCheckBoxPosition, groundCheckSize / 2f, Quaternion.identity, groundLayer).Length > 0;
-        DebugDrawGroundCheckBox(groundCheckBoxPosition, groundCheckSize, grounded);
+        // Define the color based on grounded state
+        Color color = grounded ? Color.green : Color.red;
+        DebugDrawGroundCheckBox(groundCheckBoxPosition, groundCheckSize, color);
         if (grounded)
         {
             coyote = true;
@@ -267,11 +307,8 @@ public class CharacterControllerLive : MonoBehaviour
         rbody.useGravity = !grounded;
     }
 
-    void DebugDrawGroundCheckBox(Vector3 center, Vector3 size, bool grounded)
+    void DebugDrawGroundCheckBox(Vector3 center, Vector3 size, Color color)
     {
-        // Define the color based on grounded state
-        Color color = grounded ? Color.green : Color.red;
-
         // Draw the ground check box                                      
         Debug.DrawRay(center + new Vector3(-size.x / 2f,  -size.y / 2f,0f), Vector3.right * size.x, color);
         Debug.DrawRay(center + new Vector3(-size.x / 2f,  -size.y / 2f,0f), Vector3.up * size.y, color);

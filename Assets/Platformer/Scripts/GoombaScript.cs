@@ -37,11 +37,18 @@ public class GoombaScript : MonoBehaviour
     void Update()
     {
         // Check for obstacles to the left and right
-        bool obstacleToLeft = CheckObstacle(Vector2.left,.1f,false);
-        bool obstacleToRight = CheckObstacle(Vector2.right,.1f,false);
+        bool obstacle = false;
+        if (movingRight)
+        {
+            obstacle = CheckObstacle(Vector2.right, .1f, false);
+        }
+        else
+        {
+            obstacle = CheckObstacle(Vector2.left, .1f, false);
+        }
 
         // Reverse direction if an obstacle is detected
-        if (obstacleToLeft || obstacleToRight)
+        if (obstacle)
         {
             movingRight = !movingRight;
         }

@@ -17,8 +17,8 @@ public class GameManagerScript : MonoBehaviour
     private float patternSwitchTime;
     public float patternSwitchInterval;
     private int coins;
-    // public Camera mainCamera;
-    // public float cameraSpeed;
+    private int score;
+    public CharacterControllerLive mario;
     public GameObject coinPrefab;
     public GameObject debrisPrefab;
     // Variables that control the pitch of music note blocks
@@ -33,12 +33,15 @@ public class GameManagerScript : MonoBehaviour
 
     private float elapsedTime = 0f;
     private Color targetColor = Color.clear;
+    private float startTime;
+    public int maxClockTime;
 
     private void Start()
     {
         patternSwitchTime = patternSwitchInterval;
         coins = 0;
-        // StartFadeIn(youDied);
+        score = 0;
+        startTime = Time.time;
     }
 
     // Update is called once per frame
@@ -47,21 +50,31 @@ public class GameManagerScript : MonoBehaviour
         updateHUD();
         questionBlockAnimation();
         mouseActions();
-        // moveCamera();
-        
+    }
+
+    public void addCoin()
+    {
+        coins++;
+    }
+
+    public void incrementScore(int scorebonus)
+    {
+        score += scorebonus;
     }
 
     private void updateHUD()
     {
-        int intTime = 400 - (int)Time.realtimeSinceStartup;
+        int intTime = maxClockTime - (int)(Time.time - startTime);
         if (intTime <= 0)
         {
-            StartFadeIn(youDied);
+            mario.Die();
         }
         string timeStr = $"TIME \n {intTime}";
         timerText.text = timeStr;
-        string coinStr = $" \n {coins.ToString()}";
-        coinText.text = coinStr;
+        string coinStr = coins.ToString("D3");
+        coinText.text =  "COINS\n" + coinStr;
+        string scoreString = score.ToString("D6");
+        scoreText.text = "MARIO\n" + scoreString;
     }
 
     private void mouseActions()
@@ -122,16 +135,7 @@ public class GameManagerScript : MonoBehaviour
             questionBlock.mainTextureOffset = new Vector2(x,y);
         }
     }
-
-    // private void moveCamera()
-    // {
-    //     float input = Input.GetAxis("Horizontal");
-    //     float movement = input * cameraSpeed * Time.deltaTime;
-    //
-    //     // Move the camera horizontally
-    //     mainCamera.transform.Translate(new Vector3(movement, 0f, 0f));
-    // }
-
+    
     private void spawnDebris(RaycastHit hit)
     {
         float rotationSpeed = 20;
@@ -166,6 +170,7 @@ public class GameManagerScript : MonoBehaviour
     {
         // Restart the game here
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        Start();
     }
     
     IEnumerator FadeInCoroutine(Image i)
