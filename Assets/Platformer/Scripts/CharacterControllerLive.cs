@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,6 +13,8 @@ public class CharacterControllerLive : MonoBehaviour
     public float speed = 50f;
     public float maxWalkSpeed;
     public float maxSpeed = 15f;
+    private float apexActive;
+    public float apexSpeedModifier;
     public float jumpForce = 10f;
     public float jumpBoost = .3f;
     public float jumpHaltFactor;
@@ -43,6 +46,9 @@ public class CharacterControllerLive : MonoBehaviour
     private bool canMove = true;
     private Vector3 gravConstant;
     private Vector3 lastGroundPosition;
+    public TextMeshProUGUI jumpBuffer;
+    public TextMeshProUGUI fallClamp;
+    public TextMeshProUGUI apexModifiers;
     
     
     // Start is called before the first frame update
@@ -70,6 +76,7 @@ public class CharacterControllerLive : MonoBehaviour
         Jump();
         animate();
         moveCamera();
+        updateGUI();
     }
 
     private void FixedUpdate()
@@ -79,7 +86,10 @@ public class CharacterControllerLive : MonoBehaviour
         slowDown();
     }
 
-
+    private void updateGUI()
+    {
+        jumpBuffer.enabled = jumpBuffered;
+    }
     private void BodyRotation(float horizontalMovement)
     {
         if(rbody.velocity.x==0){return;}
@@ -101,13 +111,17 @@ public class CharacterControllerLive : MonoBehaviour
             rbody.velocity.y > -apexWindow && transform.position.y > lastGroundPosition.y + 2) 
         {
             Debug.DrawRay(transform.position,Vector3.down*3,Color.black);
-            Debug.Log("APEX MODIFIERS APPLIED!");
-            HorizontalMovement();
+            // Debug.Log("APEX MODIFIERS APPLIED!");
             Physics.gravity = gravConstant / 5;
+            apexActive = apexSpeedModifier;
+            apexModifiers.enabled = true;
+            apexModifiers.text = "APEX MODIFIERS APPLIED";
         }
         else
         {
             Physics.gravity = gravConstant;
+            apexActive = 1;
+            apexModifiers.enabled = false;
         }
             
             
@@ -133,7 +147,12 @@ public class CharacterControllerLive : MonoBehaviour
         if (!grounded && rbody.velocity.y < maxFallSpeed)
         {
             rbody.velocity = new Vector3(rbody.velocity.x, maxFallSpeed, 0f);
-            // Debug.Log("CLAMPING V SPEED");
+            // Debug.Log("CLAMPING FALL SPEED");
+            fallClamp.enabled = true;
+        }
+        else
+        {
+            fallClamp.enabled = false;
         }
     }
 
@@ -161,20 +180,19 @@ public class CharacterControllerLive : MonoBehaviour
             return 0f;
         }
         float horizontalMovement = Input.GetAxis("Horizontal");
-        rbody.velocity += Vector3.right * (horizontalMovement * Time.deltaTime * speed);
+        rbody.velocity += Vector3.right * (horizontalMovement * Time.deltaTime * speed * apexActive);
         Vector3 newV = rbody.velocity;
         if (Input.GetKey(KeyCode.LeftShift))//running
         {
-            newV.x = Mathf.Clamp(newV.x,-maxSpeed, maxSpeed);
+            newV.x = Mathf.Clamp(newV.x,-maxSpeed*apexActive, maxSpeed*apexActive);
         }
         else //walking
         {
-            newV.x = Mathf.Clamp(newV.x,-maxWalkSpeed, maxWalkSpeed);
+            newV.x = Mathf.Clamp(newV.x,-maxWalkSpeed*apexActive, maxWalkSpeed*apexActive);
         }
 
         // Apply the new velocity
         rbody.velocity = newV;
-
         return horizontalMovement;
     }
 
@@ -335,7 +353,7 @@ public class CharacterControllerLive : MonoBehaviour
             {
                 ApplyJumpForce();
                 jumpBuffered = false;
-                // Debug.Log("BUFFERED JUMP GO!");
+                Debug.Log("BUFFERED JUMP GO!");
             }
         }
         rbody.useGravity = !grounded;
