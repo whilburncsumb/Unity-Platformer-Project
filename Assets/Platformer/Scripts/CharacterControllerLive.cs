@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
@@ -46,10 +47,10 @@ public class CharacterControllerLive : MonoBehaviour
     private bool canMove = true;
     private Vector3 gravConstant;
     private Vector3 lastGroundPosition;
-    public TextMeshProUGUI jumpBuffer;
+    public TextMeshProUGUI jumpBufferText;
     public TextMeshProUGUI fallClamp;
     public TextMeshProUGUI apexModifiers;
-    
+    public TextMeshProUGUI coyoteText;
     
     // Start is called before the first frame update
     void Start()
@@ -88,7 +89,8 @@ public class CharacterControllerLive : MonoBehaviour
 
     private void updateGUI()
     {
-        jumpBuffer.enabled = jumpBuffered;
+        jumpBufferText.color = jumpBuffered ? Color.blue : Color.gray;
+        coyoteText.color = coyote && !grounded && !jumping ? Color.magenta : Color.gray;
     }
     private void BodyRotation(float horizontalMovement)
     {
@@ -113,14 +115,13 @@ public class CharacterControllerLive : MonoBehaviour
             Debug.DrawRay(transform.position,Vector3.down*3,Color.black);
             Physics.gravity = gravConstant / 5;
             apexActive = apexSpeedModifier;
-            apexModifiers.enabled = true;
-            apexModifiers.text = "APEX MODIFIERS APPLIED";
+            apexModifiers.color = Color.red;
         }
         else
         {
             Physics.gravity = gravConstant;
             apexActive = 1;
-            apexModifiers.enabled = false;
+            apexModifiers.color = Color.gray;
         }
             
             
@@ -143,14 +144,14 @@ public class CharacterControllerLive : MonoBehaviour
         }
         
         //Clamp fall speed
-        if (!grounded && rbody.velocity.y < maxFallSpeed)
+        if (!grounded && rbody.velocity.y <= maxFallSpeed)
         {
             rbody.velocity = new Vector3(rbody.velocity.x, maxFallSpeed, 0f);
-            fallClamp.enabled = true;
+            fallClamp.color = Color.green;
         }
         else
         {
-            fallClamp.enabled = false;
+            fallClamp.color = Color.gray;
         }
     }
 
