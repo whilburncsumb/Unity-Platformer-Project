@@ -111,7 +111,6 @@ public class CharacterControllerLive : MonoBehaviour
             rbody.velocity.y > -apexWindow && transform.position.y > lastGroundPosition.y + 2) 
         {
             Debug.DrawRay(transform.position,Vector3.down*3,Color.black);
-            // Debug.Log("APEX MODIFIERS APPLIED!");
             Physics.gravity = gravConstant / 5;
             apexActive = apexSpeedModifier;
             apexModifiers.enabled = true;
@@ -147,7 +146,6 @@ public class CharacterControllerLive : MonoBehaviour
         if (!grounded && rbody.velocity.y < maxFallSpeed)
         {
             rbody.velocity = new Vector3(rbody.velocity.x, maxFallSpeed, 0f);
-            // Debug.Log("CLAMPING FALL SPEED");
             fallClamp.enabled = true;
         }
         else
